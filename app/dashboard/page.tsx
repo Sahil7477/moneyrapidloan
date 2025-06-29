@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState } from "react"
@@ -9,6 +10,8 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { toast } from "sonner"
+import { useRouter } from 'next/navigation'
 import {
   User,
   MapPin,
@@ -48,6 +51,10 @@ interface LoanFormData {
   accountNumber: string
 }
 
+interface ValidationErrors {
+  [key: string]: string
+}
+
 const initialFormData: LoanFormData = {
   fullName: "",
   dob: "",
@@ -63,7 +70,7 @@ const initialFormData: LoanFormData = {
   companyName: "",
   loanAmount: "",
   tenure: "",
-  interestRate: "",
+  interestRate: "7.2",
   purpose: "",
   bankName: "",
   ifsc: "",
@@ -78,27 +85,132 @@ const steps = [
   { id: 5, title: "Review & Submit", icon: CheckCircle, description: "Review and confirm your application" },
 ]
 
+const requiredFieldsByStep = {
+  1: ['fullName', 'dob', 'gender', 'phone', 'email', 'aadhaar', 'pan'],
+  2: ['permanentAddress', 'currentAddress', 'employmentType', 'income', 'companyName'],
+  3: ['loanAmount', 'tenure', 'interestRate', 'purpose'],
+  4: ['bankName', 'ifsc', 'accountNumber'],
+}
+
 export default function MultiStepLoanForm() {
   const [step, setStep] = useState(1)
   const [form, setForm] = useState(initialFormData)
+  const [errors, setErrors] = useState<ValidationErrors>({})
 
   const handleChange = (key: keyof LoanFormData, value: string) => {
     setForm({ ...form, [key]: value })
+    // Clear error when user starts typing
+    if (errors[key]) {
+      setErrors({ ...errors, [key]: "" })
+    }
   }
 
-  const next = () => setStep((s) => Math.min(s + 1, 5))
+  const validateStep = (stepNumber: number): boolean => {
+    const requiredFields = requiredFieldsByStep[stepNumber as keyof typeof requiredFieldsByStep]
+    const newErrors: ValidationErrors = {}
+    let isValid = true
+
+    requiredFields.forEach(field => {
+      if (!form[field as keyof LoanFormData].trim()) {
+        newErrors[field] = "This field is required"
+        isValid = false
+      }
+    })
+
+    // Additional validations
+    if (stepNumber === 1) {
+      // Email validation
+      if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+        newErrors.email = "Please enter a valid email address"
+        isValid = false
+      }
+      
+      // Phone validation
+      if (form.phone && !/^\d{10}$/.test(form.phone.replace(/\D/g, ''))) {
+        newErrors.phone = "Please enter a valid 10-digit phone number"
+        isValid = false
+      }
+
+      // Aadhaar validation
+      if (form.aadhaar && !/^\d{12}$/.test(form.aadhaar.replace(/\D/g, ''))) {
+        newErrors.aadhaar = "Please enter a valid 12-digit Aadhaar number"
+        isValid = false
+      }
+
+      // PAN validation
+      if (form.pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan.toUpperCase())) {
+        newErrors.pan = "Please enter a valid PAN number (e.g., ABCDE1234F)"
+        isValid = false
+      }
+    }
+
+    if (stepNumber === 2) {
+      // Income validation
+      if (form.income && isNaN(Number(form.income))) {
+        newErrors.income = "Please enter a valid income amount"
+        isValid = false
+      }
+    }
+
+    if (stepNumber === 3) {
+      // Loan amount validation
+      if (form.loanAmount && (isNaN(Number(form.loanAmount)) || Number(form.loanAmount) <= 0)) {
+        newErrors.loanAmount = "Please enter a valid loan amount"
+        isValid = false
+      }
+
+      // Tenure validation
+      if (form.tenure && (isNaN(Number(form.tenure)) || Number(form.tenure) <= 0)) {
+        newErrors.tenure = "Please enter a valid tenure in months"
+        isValid = false
+      }
+
+      // Interest rate validation
+      if (form.interestRate && (isNaN(Number(form.interestRate)) || Number(form.interestRate) <= 0)) {
+        newErrors.interestRate = "Please enter a valid interest rate"
+        isValid = false
+      }
+    }
+
+    if (stepNumber === 4) {
+      // IFSC validation
+      if (form.ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(form.ifsc.toUpperCase())) {
+        newErrors.ifsc = "Please enter a valid IFSC code"
+        isValid = false
+      }
+
+      // Account number validation
+      if (form.accountNumber && !/^\d{9,18}$/.test(form.accountNumber)) {
+        newErrors.accountNumber = "Please enter a valid account number"
+        isValid = false
+      }
+    }
+
+    setErrors(newErrors)
+    return isValid
+  }
+
+  const next = () => {
+    if (validateStep(step)) {
+      setStep((s) => Math.min(s + 1, 5))
+      toast.success("Step completed successfully!")
+    } else {
+      toast.error("Please fill in all required fields correctly")
+    }
+  }
+
   const prev = () => setStep((s) => Math.max(s - 1, 1))
 
   const calculateEMI = () => {
     const P = Number.parseFloat(form.loanAmount)
-    const r = Number.parseFloat(form.interestRate) / 12 / 100
+    const r = 7.2 / 12 / 100
     const n = Number.parseInt(form.tenure)
     if (isNaN(P) || isNaN(r) || isNaN(n)) return 0
     return Math.round((P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1))
   }
 
   const processingFee = () => {
-    const fee = Number.parseFloat(form.loanAmount) * 0.015
+    const fee = Number.parseFloat(form.loanAmount) * 0.15
     return isNaN(fee) ? 0 : Math.round(fee)
   }
 
@@ -108,27 +220,131 @@ export default function MultiStepLoanForm() {
     return isNaN(emi) || isNaN(tenure) ? 0 : emi * tenure
   }
 
-  const handleSubmit = async () => {
-    try {
-      const res = await fetch("/api/submit-loan", {
-        method: "POST",
-        body: JSON.stringify({
-          ...form,
-          emi: calculateEMI(),
-          fee: processingFee(),
-          totalPayable: totalPayable(),
-        }),
-        headers: { "Content-Type": "application/json" },
-      })
-      if (res.ok) alert("Application submitted successfully! ✅")
-      else alert("Failed to submit application ❌")
-    } catch (error) {
-      console.error("Submission error:", error)
+ 
+
+// inside your component
+const router = useRouter()
+
+
+
+// inside your component
+
+
+const handleSubmit = async () => {
+  try {
+    const res = await fetch('/api/submit-loan', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(form),
+    })
+
+    const result = await res.json()
+
+    if (res.ok) {
+      toast.success("🎉 Thank you. Your Loan application has been submitted. We will review it and connect with you. Visit our website.")
+
+      // Wait 2 seconds, then redirect to blank thank-you page
+      setTimeout(() => {
+        router.push('/thank-you')
+      }, 2000)
+    } else {
+      toast.error(result.error || "Failed to submit application. Please try again.")
     }
+  } catch (error) {
+    console.error("Submit error:", error)
+    toast.error("Something went wrong while submitting the form.")
   }
+}
+
+
+
+
 
   const progress = (step / 5) * 100
   const currentStep = steps.find((s) => s.id === step)
+
+  const renderInput = (
+    key: keyof LoanFormData,
+    label: string,
+    placeholder: string,
+    type: string = "text",
+    icon?: React.ComponentType<{ className?: string }>
+  ) => {
+    const Icon = icon
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={key} className="flex items-center space-x-2">
+          {Icon && <Icon className="h-4 w-4" />}
+          <span>{label} <span className="text-red-500">*</span></span>
+        </Label>
+        <Input
+          id={key}
+          type={type}
+          placeholder={placeholder}
+          value={form[key]}
+          onChange={(e) => handleChange(key, e.target.value)}
+          className={errors[key] ? "border-red-500 focus:border-red-500" : ""}
+        />
+        {errors[key] && <p className="text-red-500 text-sm">{errors[key]}</p>}
+      </div>
+    )
+  }
+
+  const renderSelect = (
+    key: keyof LoanFormData,
+    label: string,
+    placeholder: string,
+    options: { value: string; label: string }[],
+    icon?: React.ComponentType<{ className?: string }>
+  ) => {
+    const Icon = icon
+    return (
+      <div className="space-y-2">
+        <Label className="flex items-center space-x-2">
+          {Icon && <Icon className="h-4 w-4" />}
+          <span>{label} <span className="text-red-500">*</span></span>
+        </Label>
+        <Select onValueChange={(val) => handleChange(key, val)} value={form[key]}>
+          <SelectTrigger className={errors[key] ? "border-red-500 focus:border-red-500" : ""}>
+            <SelectValue placeholder={placeholder} />
+          </SelectTrigger>
+          <SelectContent>
+            {options.map(option => (
+              <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        {errors[key] && <p className="text-red-500 text-sm">{errors[key]}</p>}
+      </div>
+    )
+  }
+
+  const renderTextarea = (
+    key: keyof LoanFormData,
+    label: string,
+    placeholder: string,
+    icon?: React.ComponentType<{ className?: string }>
+  ) => {
+    const Icon = icon
+    return (
+      <div className="space-y-2">
+        <Label htmlFor={key} className="flex items-center space-x-2">
+          {Icon && <Icon className="h-4 w-4" />}
+          <span>{label} <span className="text-red-500">*</span></span>
+        </Label>
+        <Textarea
+          id={key}
+          placeholder={placeholder}
+          value={form[key]}
+          onChange={(e) => handleChange(key, e.target.value)}
+          className={errors[key] ? "border-red-500 focus:border-red-500" : ""}
+        />
+        {errors[key] && <p className="text-red-500 text-sm">{errors[key]}</p>}
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8 px-4">
@@ -140,269 +356,111 @@ export default function MultiStepLoanForm() {
         </div>
 
         {/* Progress Bar */}
-        <Card className="mb-8">
+        <Card className="mb-8 shadow-lg">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-2">
                 {currentStep && <currentStep.icon className="h-5 w-5 text-blue-600" />}
                 <span className="font-semibold text-gray-900">{currentStep?.title}</span>
               </div>
-              <Badge variant="secondary">Step {step} of 5</Badge>
+              <Badge variant="secondary" className="bg-blue-100 text-blue-800">Step {step} of 5</Badge>
             </div>
-            <Progress value={progress} className="mb-2" />
+            <Progress value={progress} className="mb-2 h-2" />
             <p className="text-sm text-gray-600">{currentStep?.description}</p>
           </CardContent>
         </Card>
 
         {/* Step Navigation */}
         <div className="flex justify-center mb-8">
-          <div className="flex space-x-4">
+          <div className="flex space-x-4 overflow-x-auto pb-2">
             {steps.map((s) => (
-              <div key={s.id} className="flex items-center">
+              <div key={s.id} className="flex items-center flex-shrink-0">
                 <div
                   className={`
-                  flex items-center justify-center w-10 h-10 rounded-full border-2 transition-colors
-                  ${step >= s.id ? "bg-blue-600 border-blue-600 text-white" : "bg-white border-gray-300 text-gray-400"}
+                  flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300
+                  ${step >= s.id ? "bg-blue-600 border-blue-600 text-white shadow-lg scale-110" : "bg-white border-gray-300 text-gray-400"}
                 `}
                 >
                   <s.icon className="h-5 w-5" />
                 </div>
-                {s.id < 5 && <div className={`w-12 h-0.5 mx-2 ${step > s.id ? "bg-blue-600" : "bg-gray-300"}`} />}
+                {s.id < 5 && <div className={`w-12 h-0.5 mx-2 transition-colors duration-300 ${step > s.id ? "bg-blue-600" : "bg-gray-300"}`} />}
               </div>
             ))}
           </div>
         </div>
 
         {/* Form Content */}
-        <Card className="mb-8">
-          <CardHeader>
+        <Card className="mb-8 shadow-lg">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
             <CardTitle className="flex items-center space-x-2">
               {currentStep && <currentStep.icon className="h-6 w-6 text-blue-600" />}
               <span>{currentStep?.title}</span>
             </CardTitle>
             <CardDescription>{currentStep?.description}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6">
+          <CardContent className="space-y-6 pt-6">
             {step === 1 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="fullName" className="flex items-center space-x-2">
-                    <User className="h-4 w-4" />
-                    <span>Full Name</span>
-                  </Label>
-                  <Input
-                    id="fullName"
-                    placeholder="Enter your full name"
-                    value={form.fullName}
-                    onChange={(e) => handleChange("fullName", e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="dob" className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>Date of Birth</span>
-                  </Label>
-                  <Input id="dob" type="date" value={form.dob} onChange={(e) => handleChange("dob", e.target.value)} />
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Gender</Label>
-                  <Select onValueChange={(val) => handleChange("gender", val)} value={form.gender}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select gender" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Male">Male</SelectItem>
-                      <SelectItem value="Female">Female</SelectItem>
-                      <SelectItem value="Other">Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="flex items-center space-x-2">
-                    <Phone className="h-4 w-4" />
-                    <span>Phone Number</span>
-                  </Label>
-                  <Input
-                    id="phone"
-                    placeholder="Enter phone number"
-                    value={form.phone}
-                    onChange={(e) => handleChange("phone", e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email" className="flex items-center space-x-2">
-                    <Mail className="h-4 w-4" />
-                    <span>Email Address</span>
-                  </Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="Enter email address"
-                    value={form.email}
-                    onChange={(e) => handleChange("email", e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="aadhaar" className="flex items-center space-x-2">
-                    <FileText className="h-4 w-4" />
-                    <span>Aadhaar Number</span>
-                  </Label>
-                  <Input
-                    id="aadhaar"
-                    placeholder="Enter Aadhaar number"
-                    value={form.aadhaar}
-                    onChange={(e) => handleChange("aadhaar", e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="pan">PAN Number</Label>
-                  <Input
-                    id="pan"
-                    placeholder="Enter PAN number"
-                    value={form.pan}
-                    onChange={(e) => handleChange("pan", e.target.value)}
-                  />
-                </div>
+                {renderInput("fullName", "Full Name", "Enter your full name", "text", User)}
+                {renderInput("dob", "Date of Birth", "", "date", Calendar)}
+                {renderSelect("gender", "Gender", "Select gender", [
+                  { value: "Male", label: "Male" },
+                  { value: "Female", label: "Female" },
+                  { value: "Other", label: "Other" }
+                ])}
+                {renderInput("phone", "Phone Number", "Enter 10-digit phone number", "tel", Phone)}
+                {renderInput("email", "Email Address", "Enter email address", "email", Mail)}
+                {renderInput("aadhaar", "Aadhaar Number", "Enter 12-digit Aadhaar number", "text", FileText)}
+                {renderInput("pan", "PAN Number", "Enter PAN number (e.g., ABCDE1234F)", "text")}
               </div>
             )}
 
             {step === 2 && (
               <div className="space-y-6">
-                <div className="space-y-2">
-                  <Label htmlFor="permanentAddress" className="flex items-center space-x-2">
-                    <MapPin className="h-4 w-4" />
-                    <span>Permanent Address</span>
-                  </Label>
-                  <Textarea
-                    id="permanentAddress"
-                    placeholder="Enter your permanent address"
-                    value={form.permanentAddress}
-                    onChange={(e) => handleChange("permanentAddress", e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="currentAddress">Current Address</Label>
-                  <Textarea
-                    id="currentAddress"
-                    placeholder="Enter your current address"
-                    value={form.currentAddress}
-                    onChange={(e) => handleChange("currentAddress", e.target.value)}
-                  />
-                </div>
-
+                {renderTextarea("permanentAddress", "Permanent Address", "Enter your permanent address", MapPin)}
+                {renderTextarea("currentAddress", "Current Address", "Enter your current address")}
+                
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label className="flex items-center space-x-2">
-                      <Briefcase className="h-4 w-4" />
-                      <span>Employment Type</span>
-                    </Label>
-                    <Select onValueChange={(val) => handleChange("employmentType", val)} value={form.employmentType}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select employment type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Salaried">Salaried</SelectItem>
-                        <SelectItem value="Self-employed">Self-employed</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="income" className="flex items-center space-x-2">
-                      <IndianRupee className="h-4 w-4" />
-                      <span>Monthly Income</span>
-                    </Label>
-                    <Input
-                      id="income"
-                      placeholder="Enter monthly income"
-                      value={form.income}
-                      onChange={(e) => handleChange("income", e.target.value)}
-                    />
-                  </div>
+                  {renderSelect("employmentType", "Employment Type", "Select employment type", [
+                    { value: "Salaried", label: "Salaried" },
+                    { value: "Self-employed", label: "Self-employed" }
+                  ], Briefcase)}
+                  {renderInput("income", "Monthly Income", "Enter monthly income in ₹", "number", IndianRupee)}
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="companyName">Company Name</Label>
-                  <Input
-                    id="companyName"
-                    placeholder="Enter company name"
-                    value={form.companyName}
-                    onChange={(e) => handleChange("companyName", e.target.value)}
-                  />
-                </div>
+                {renderInput("companyName", "Company Name", "Enter company name", "text")}
               </div>
             )}
 
             {step === 3 && (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="loanAmount" className="flex items-center space-x-2">
-                      <IndianRupee className="h-4 w-4" />
-                      <span>Loan Amount</span>
-                    </Label>
-                    <Input
-                      id="loanAmount"
-                      placeholder="Enter loan amount"
-                      value={form.loanAmount}
-                      onChange={(e) => handleChange("loanAmount", e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="tenure">Tenure (months)</Label>
-                    <Input
-                      id="tenure"
-                      placeholder="Enter tenure in months"
-                      value={form.tenure}
-                      onChange={(e) => handleChange("tenure", e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="interestRate">Interest Rate (%)</Label>
-                    <Input
-                      id="interestRate"
-                      placeholder="e.g., 12"
-                      value={form.interestRate}
-                      onChange={(e) => handleChange("interestRate", e.target.value)}
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="purpose">Loan Purpose</Label>
-                    <Input
-                      id="purpose"
-                      placeholder="Enter loan purpose"
-                      value={form.purpose}
-                      onChange={(e) => handleChange("purpose", e.target.value)}
-                    />
-                  </div>
+                  {renderInput("loanAmount", "Loan Amount", "Enter loan amount in ₹", "number", IndianRupee)}
+                  {renderInput("tenure", "Tenure (months)", "Enter tenure in months", "number")}
+                  
+                  {renderInput("purpose", "Loan Purpose", "Enter loan purpose", "text")}
                 </div>
 
                 {/* EMI Calculator Preview */}
-                {form.loanAmount && form.tenure && form.interestRate && (
-                  <Card className="bg-blue-50 border-blue-200">
+                {form.loanAmount && form.tenure && form.interestRate && !errors.loanAmount && !errors.tenure && !errors.interestRate && (
+                  <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-md">
                     <CardContent className="pt-6">
                       <div className="flex items-center space-x-2 mb-4">
                         <Calculator className="h-5 w-5 text-blue-600" />
                         <h3 className="font-semibold text-blue-900">EMI Calculation</h3>
                       </div>
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600">Monthly EMI:</span>
-                          <p className="font-semibold text-blue-900">₹{calculateEMI().toLocaleString()}</p>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                        <div className="text-center">
+                          <span className="text-gray-600">Monthly EMI</span>
+                          <p className="font-bold text-blue-900 text-lg">₹{calculateEMI().toLocaleString()}</p>
                         </div>
-                        <div>
-                          <span className="text-gray-600">Processing Fee:</span>
-                          <p className="font-semibold text-blue-900">₹{processingFee().toLocaleString()}</p>
+                        <div className="text-center">
+                          <span className="text-gray-600">Processing Fee</span>
+                          <p className="font-bold text-blue-900 text-lg">₹{processingFee().toLocaleString()}</p>
+                        </div>
+                        <div className="text-center md:col-span-1 col-span-2">
+                          <span className="text-gray-600">Total Payable</span>
+                          <p className="font-bold text-blue-900 text-lg">₹{totalPayable().toLocaleString()}</p>
                         </div>
                       </div>
                     </CardContent>
@@ -413,37 +471,10 @@ export default function MultiStepLoanForm() {
 
             {step === 4 && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="bankName" className="flex items-center space-x-2">
-                    <Building2 className="h-4 w-4" />
-                    <span>Bank Name</span>
-                  </Label>
-                  <Input
-                    id="bankName"
-                    placeholder="Enter bank name"
-                    value={form.bankName}
-                    onChange={(e) => handleChange("bankName", e.target.value)}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="ifsc">IFSC Code</Label>
-                  <Input
-                    id="ifsc"
-                    placeholder="Enter IFSC code"
-                    value={form.ifsc}
-                    onChange={(e) => handleChange("ifsc", e.target.value)}
-                  />
-                </div>
-
-                <div className="md:col-span-2 space-y-2">
-                  <Label htmlFor="accountNumber">Account Number</Label>
-                  <Input
-                    id="accountNumber"
-                    placeholder="Enter account number"
-                    value={form.accountNumber}
-                    onChange={(e) => handleChange("accountNumber", e.target.value)}
-                  />
+                {renderInput("bankName", "Bank Name", "Enter bank name", "text", Building2)}
+                {renderInput("ifsc", "IFSC Code", "Enter IFSC code (e.g., SBIN0001234)", "text")}
+                <div className="md:col-span-2">
+                  {renderInput("accountNumber", "Account Number", "Enter account number", "text")}
                 </div>
               </div>
             )}
@@ -457,7 +488,7 @@ export default function MultiStepLoanForm() {
                 </div>
 
                 {/* Loan Summary */}
-                <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-md">
                   <CardHeader>
                     <CardTitle className="text-blue-900">Loan Summary</CardTitle>
                   </CardHeader>
@@ -487,7 +518,7 @@ export default function MultiStepLoanForm() {
 
                 {/* Application Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <Card>
+                  <Card className="shadow-md">
                     <CardHeader>
                       <CardTitle className="text-lg">Personal Information</CardTitle>
                     </CardHeader>
@@ -511,7 +542,7 @@ export default function MultiStepLoanForm() {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="shadow-md">
                     <CardHeader>
                       <CardTitle className="text-lg">Loan Information</CardTitle>
                     </CardHeader>
@@ -537,8 +568,9 @@ export default function MultiStepLoanForm() {
                 </div>
 
                 <Button
+                
                   onClick={handleSubmit}
-                  className="w-full h-12 text-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  className="w-full h-12 text-lg bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300"
                 >
                   <CheckCircle className="h-5 w-5 mr-2" />
                   Submit Application
@@ -554,14 +586,17 @@ export default function MultiStepLoanForm() {
             variant="outline"
             onClick={prev}
             disabled={step === 1}
-            className="flex items-center space-x-2 bg-transparent"
+            className="flex items-center space-x-2 bg-white hover:bg-gray-50 shadow-md"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Previous</span>
           </Button>
 
           {step < 5 && (
-            <Button onClick={next} className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700">
+            <Button 
+              onClick={next} 
+              className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transition-all duration-300"
+            >
               <span>Next</span>
               <ArrowRight className="h-4 w-4" />
             </Button>
