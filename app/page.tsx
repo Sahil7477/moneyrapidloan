@@ -64,9 +64,9 @@ export default function PhoneAuth() {
 
     if (!phone.trim()) {
       newErrors.phone = "Phone number is required"
-    } else if (!phone.startsWith("+")) {
-      newErrors.phone = "Phone must start with + and country code (e.g., +1234567890)"
-    } else if (phone.length < 10) {
+    } else if (phone.length !== 10) {
+  newErrors.phone = "Please enter a valid 10-digit phone number"
+} else if (phone.length < 10) {
       newErrors.phone = "Please enter a valid phone number"
     }
 
@@ -109,7 +109,7 @@ export default function PhoneAuth() {
 
     try {
       setupRecaptcha()
-      const confirmation = await signInWithPhoneNumber(auth, phone, window.recaptchaVerifier!)
+      const confirmation = await signInWithPhoneNumber(auth, `+91${phone}`, window.recaptchaVerifier!)
 
       window.confirmationResult = confirmation
       setStep("otp")
@@ -208,15 +208,15 @@ export default function PhoneAuth() {
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>
                 <Input
-                  id="phone"
-                  type="tel"
-                  placeholder="+1234567890"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  disabled={isLoading}
-                />
+    id="phone"
+    type="tel"
+    className="rounded-l-none"
+    value={phone}
+    onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))} // limit to 10 digits
+    disabled={isLoading}
+  />
                 {errors.phone && <p className="text-sm text-red-600">{errors.phone}</p>}
-                <p className="text-xs text-gray-500">Include country code (e.g., +1 for US, +91 for India)</p>
+                
               </div>
 
               <Button onClick={handleSendOTP} className="w-full" disabled={isLoading}>

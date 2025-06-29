@@ -56,8 +56,12 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json({ message: 'PDF sent via email!' }, { status: 200 })
-  } catch (error: any) {
-    console.error('Submit loan error:', error.message)
-    return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
+  } catch (error: unknown) {
+  if (error instanceof Error) {
+    console.error("Submit loan error:", error.message)
+  } else {
+    console.error("Submit loan error:", error)
   }
+}
+
 }

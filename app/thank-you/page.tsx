@@ -29,7 +29,7 @@ export default function ThankYouPage() {
               <strong>What happens next?</strong>
             </p>
             <p className="text-sm text-gray-600 mt-1">
-              You'll receive a confirmation email within the next few minutes. Our team will review your submission and
+              You&apos;ll receive a confirmation email within the next few minutes. Our team will review your submission and
               respond within 24-48 hours.
             </p>
           </div>
