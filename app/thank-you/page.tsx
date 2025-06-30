@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
-import { CheckCircle, ArrowLeft, Home } from "lucide-react"
+import { CheckCircle, Home } from "lucide-react"
 import Link from "next/link"
 
 export default function ThankYouPage() {
@@ -43,19 +43,14 @@ export default function ThankYouPage() {
               </Link>
             </Button>
 
-            <Button variant="outline" asChild className="w-full bg-transparent">
-              <Link href="/contact">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Contact Us Again
-              </Link>
-            </Button>
+            
           </div>
 
           {/* Footer Text */}
           <p className="text-xs text-gray-500">
             Need immediate assistance? Email us at{" "}
-            <a href="mailto:support@example.com" className="text-blue-600 hover:underline">
-              support@example.com
+            <a href="mailto:moneyrapidloan@gmail.com" className="text-blue-600 hover:underline">
+              moneyrapidloan@gmail.com
             </a>
           </p>
         </CardContent>

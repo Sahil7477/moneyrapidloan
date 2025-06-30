@@ -70,7 +70,7 @@ const initialFormData: LoanFormData = {
   companyName: "",
   loanAmount: "",
   tenure: "",
-  interestRate: "7.2",
+  interestRate: "6.1",
   purpose: "",
   bankName: "",
   ifsc: "",
@@ -209,10 +209,7 @@ export default function MultiStepLoanForm() {
     return Math.round((P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1))
   }
 
-  const processingFee = () => {
-    const fee = Number.parseFloat(form.loanAmount) * 0.15
-    return isNaN(fee) ? 0 : Math.round(fee)
-  }
+  const processingFee = () => 2999
 
   const totalPayable = () => {
     const emi = calculateEMI()
