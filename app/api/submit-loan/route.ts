@@ -41,6 +41,8 @@ export async function POST(req: NextRequest) {
         pass: process.env.COMPANY_EMAIL_PASS,
       },
     })
+    console.log('Using email:', process.env.COMPANY_EMAIL)
+
 
     await transporter.sendMail({
       from: `"Loan Portal" <${process.env.COMPANY_EMAIL}>`,

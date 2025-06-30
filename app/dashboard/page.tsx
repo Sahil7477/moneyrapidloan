@@ -203,7 +203,7 @@ export default function MultiStepLoanForm() {
 
   const calculateEMI = () => {
     const P = Number.parseFloat(form.loanAmount)
-    const r = 7.2 / 12 / 100
+    const r = 6.1 / 12 / 100
     const n = Number.parseInt(form.tenure)
     if (isNaN(P) || isNaN(r) || isNaN(n)) return 0
     return Math.round((P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1))
