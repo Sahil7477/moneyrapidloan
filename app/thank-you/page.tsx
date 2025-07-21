@@ -1,60 +1,75 @@
+import { CheckCircle, Home, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { CheckCircle, Home } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import Link from "next/link"
 
 export default function ThankYouPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md mx-auto shadow-lg">
-        <CardContent className="p-8 text-center space-y-6">
-          {/* Success Icon */}
-          <div className="flex justify-center">
-            <div className="rounded-full bg-green-100 p-3">
-              <CheckCircle className="h-12 w-12 text-green-600" />
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 py-8 px-4">
+      <div className="max-w-2xl mx-auto">
+        <Card className="shadow-xl border-0">
+          <CardHeader className="text-center bg-gradient-to-r from-green-50 to-blue-50 rounded-t-lg">
+            <div className="mx-auto mb-4">
+              <CheckCircle className="h-20 w-20 text-green-600 mx-auto animate-pulse" />
             </div>
-          </div>
+            <CardTitle className="text-3xl font-bold text-gray-900 mb-2">Application Submitted Successfully!</CardTitle>
+          </CardHeader>
 
-          {/* Thank You Message */}
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-gray-900">Thank You!</h1>
-            <p className="text-gray-600">
-              Your submission has been received successfully. We appreciate your time and will get back to you soon.
-            </p>
-          </div>
+          <CardContent className="text-center space-y-6 pt-8">
+            <div className="space-y-4">
+              <p className="text-lg text-gray-700">Thank you for submitting your loan application.</p>
 
-          {/* Additional Info */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <p className="text-sm text-gray-700">
-              <strong>What happens next?</strong>
-            </p>
-            <p className="text-sm text-gray-600 mt-1">
-              You&apos;ll receive a confirmation email within the next few minutes. Our team will review your submission and
-              respond within 24-48 hours.
-            </p>
-          </div>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <p className="text-blue-800 font-medium">
+                  🎉 Your application has been received and is being reviewed by our team.
+                </p>
+              </div>
 
-          {/* Action Buttons */}
-          <div className="space-y-3">
-            <Button asChild className="w-full">
+              <div className="space-y-2 text-gray-600">
+                <p>• We will review your application within 24-48 hours</p>
+                <p>• Our team will contact you via phone or email</p>
+                <p>• Keep your documents ready for verification</p>
+              </div>
+            </div>
+
+            <div className="border-t pt-6 space-y-4">
+              <h3 className="text-lg font-semibold text-gray-900">What is Next?</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <FileText className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                  <h4 className="font-medium text-gray-900">Document Verification</h4>
+                  <p className="text-sm text-gray-600 mt-1">Our team will verify your submitted documents</p>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <CheckCircle className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                  <h4 className="font-medium text-gray-900">Final Approval</h4>
+                  <p className="text-sm text-gray-600 mt-1">Get final approval and loan disbursement</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-6">
               <Link href="/">
-                <Home className="h-4 w-4 mr-2" />
-                Back to Home
+                <Button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300">
+                  <Home className="h-4 w-4 mr-2" />
+                  Back to Home
+                </Button>
               </Link>
-            </Button>
+            </div>
 
-            
-          </div>
-
-          {/* Footer Text */}
-          <p className="text-xs text-gray-500">
-            Need immediate assistance? Email us at{" "}
-            <a href="mailto:moneyrapidloan@gmail.com" className="text-blue-600 hover:underline">
-              moneyrapidloan@gmail.com
-            </a>
-          </p>
-        </CardContent>
-      </Card>
+            <div className="text-sm text-gray-500 pt-4 border-t">
+              <p>
+                Need help? Contact us at <span className="font-medium text-blue-600">moneyrapidloan@gmail.com</span>
+              </p>
+              <p>
+                or call <span className="font-medium text-blue-600">1-800-LOAN-HELP</span>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }
