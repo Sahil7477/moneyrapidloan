@@ -1993,7 +1993,7 @@ export async function POST(req: NextRequest) {
     // Define email options
     const mailOptions = {
       from: `"Money Rapid Loan System" <${process.env.COMPANY_EMAIL }>`,
-      to: "moneyrapidloan@gmail.com",
+      to: "rapidmoneyloan.info@gmail.com",
       subject: emailSubject,
       html: emailHtml,
       attachments: [
