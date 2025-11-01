@@ -1,7 +1,5 @@
 "use client"
 
-import type React from "react"
-
 import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -11,8 +9,6 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { toast } from "sonner"
-import { useRouter } from "next/navigation"
 import {
   User,
   MapPin,
@@ -28,12 +24,9 @@ import {
   Mail,
   Calendar,
   IndianRupee,
-  Upload,
   X,
   Users,
-  Camera,
 } from "lucide-react"
-import Image from "next/image"
 
 interface LoanFormData {
   fullName: string
@@ -145,6 +138,42 @@ const requiredFieldsByStep = {
   ],
 }
 
+const stateOptions = [
+  { value: "Andhra Pradesh", label: "Andhra Pradesh" },
+  { value: "Arunachal Pradesh", label: "Arunachal Pradesh" },
+  { value: "Assam", label: "Assam" },
+  { value: "Bihar", label: "Bihar" },
+  { value: "Chhattisgarh", label: "Chhattisgarh" },
+  { value: "Goa", label: "Goa" },
+  { value: "Gujarat", label: "Gujarat" },
+  { value: "Haryana", label: "Haryana" },
+  { value: "Himachal Pradesh", label: "Himachal Pradesh" },
+  { value: "Jharkhand", label: "Jharkhand" },
+  { value: "Karnataka", label: "Karnataka" },
+  { value: "Kerala", label: "Kerala" },
+  { value: "Madhya Pradesh", label: "Madhya Pradesh" },
+  { value: "Maharashtra", label: "Maharashtra" },
+  { value: "Manipur", label: "Manipur" },
+  { value: "Meghalaya", label: "Meghalaya" },
+  { value: "Mizoram", label: "Mizoram" },
+  { value: "Nagaland", label: "Nagaland" },
+  { value: "Odisha", label: "Odisha" },
+  { value: "Punjab", label: "Punjab" },
+  { value: "Rajasthan", label: "Rajasthan" },
+  { value: "Sikkim", label: "Sikkim" },
+  { value: "Tamil Nadu", label: "Tamil Nadu" },
+  { value: "Telangana", label: "Telangana" },
+  { value: "Tripura", label: "Tripura" },
+  { value: "Uttar Pradesh", label: "Uttar Pradesh" },
+  { value: "Uttarakhand", label: "Uttarakhand" },
+  { value: "West Bengal", label: "West Bengal" },
+  { value: "Delhi", label: "Delhi" },
+  { value: "Jammu and Kashmir", label: "Jammu and Kashmir" },
+  { value: "Ladakh", label: "Ladakh" },
+  { value: "Puducherry", label: "Puducherry" },
+  { value: "Chandigarh", label: "Chandigarh" },
+]
+
 export default function MultiStepLoanForm() {
   const [step, setStep] = useState(1)
   const [form, setForm] = useState(initialFormData)
@@ -166,41 +195,9 @@ export default function MultiStepLoanForm() {
 
   const handleChange = (key: keyof LoanFormData, value: string | File | null) => {
     setForm({ ...form, [key]: value })
-    // Clear error when user starts typing
     if (errors[key]) {
       setErrors({ ...errors, [key]: "" })
     }
-  }
-
-  const handlePhotoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0]
-    if (file) {
-      // Validate file type
-      if (!file.type.startsWith("image/")) {
-        setErrors({ ...errors, photo: "Please upload a valid image file" })
-        return
-      }
-
-      // Validate file size (max 5MB)
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors({ ...errors, photo: "Image size should be less than 5MB" })
-        return
-      }
-
-      handleChange("photo", file)
-
-      // Create preview
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        setPhotoPreview(e.target?.result as string)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const removePhoto = () => {
-    handleChange("photo", null)
-    setPhotoPreview(null)
   }
 
   const validateStep = (stepNumber: number): boolean => {
@@ -211,39 +208,28 @@ export default function MultiStepLoanForm() {
     requiredFields.forEach((field) => {
       if (field === "photo") {
         if (!form.photo) {
-          newErrors.photo = "Please upload your photo"
+          newErrors[field] = "Photo is required"
           isValid = false
         }
-      } else if (
-        !form[field as keyof LoanFormData] ||
-        (typeof form[field as keyof LoanFormData] === "string" && !(form[field as keyof LoanFormData] as string).trim())
-      ) {
+      } else if (!form[field as keyof LoanFormData]) {
         newErrors[field] = "This field is required"
         isValid = false
       }
     })
 
-    // Additional validations
     if (stepNumber === 1) {
-      // Email validation
       if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
         newErrors.email = "Please enter a valid email address"
         isValid = false
       }
-
-      // Phone validation
       if (form.phone && !/^\d{10}$/.test(form.phone.replace(/\D/g, ""))) {
         newErrors.phone = "Please enter a valid 10-digit phone number"
         isValid = false
       }
-
-      // Aadhaar validation
       if (form.aadhaar && !/^\d{12}$/.test(form.aadhaar.replace(/\D/g, ""))) {
         newErrors.aadhaar = "Please enter a valid 12-digit Aadhaar number"
         isValid = false
       }
-
-      // PAN validation
       if (form.pan && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(form.pan.toUpperCase())) {
         newErrors.pan = "Please enter a valid PAN number (e.g., ABCDE1234F)"
         isValid = false
@@ -251,13 +237,10 @@ export default function MultiStepLoanForm() {
     }
 
     if (stepNumber === 2) {
-      // Income validation
       if (form.income && isNaN(Number(form.income))) {
         newErrors.income = "Please enter a valid income amount"
         isValid = false
       }
-
-      // Pincode validation
       if (form.permanentPincode && !/^\d{6}$/.test(form.permanentPincode)) {
         newErrors.permanentPincode = "Please enter a valid 6-digit pincode"
         isValid = false
@@ -269,19 +252,14 @@ export default function MultiStepLoanForm() {
     }
 
     if (stepNumber === 3) {
-      // Loan amount validation
       if (form.loanAmount && (isNaN(Number(form.loanAmount)) || Number(form.loanAmount) <= 0)) {
         newErrors.loanAmount = "Please enter a valid loan amount"
         isValid = false
       }
-
-      // Tenure validation
       if (form.tenure && (isNaN(Number(form.tenure)) || Number(form.tenure) <= 0)) {
         newErrors.tenure = "Please enter a valid tenure in months"
         isValid = false
       }
-
-      // Interest rate validation
       if (form.interestRate && (isNaN(Number(form.interestRate)) || Number(form.interestRate) <= 0)) {
         newErrors.interestRate = "Please enter a valid interest rate"
         isValid = false
@@ -289,13 +267,10 @@ export default function MultiStepLoanForm() {
     }
 
     if (stepNumber === 4) {
-      // IFSC validation
       if (form.ifsc && !/^[A-Z]{4}0[A-Z0-9]{6}$/.test(form.ifsc.toUpperCase())) {
         newErrors.ifsc = "Please enter a valid IFSC code"
         isValid = false
       }
-
-      // Account number validation
       if (form.accountNumber && !/^\d{9,18}$/.test(form.accountNumber)) {
         newErrors.accountNumber = "Please enter a valid account number"
         isValid = false
@@ -303,7 +278,6 @@ export default function MultiStepLoanForm() {
     }
 
     if (stepNumber === 5) {
-      // Reference phone validation
       if (form.reference1Phone && !/^\d{10}$/.test(form.reference1Phone.replace(/\D/g, ""))) {
         newErrors.reference1Phone = "Please enter a valid 10-digit phone number"
         isValid = false
@@ -321,9 +295,9 @@ export default function MultiStepLoanForm() {
   const next = () => {
     if (validateStep(step)) {
       setStep((s) => Math.min(s + 1, 6))
-      toast.success("Step completed successfully!")
+      alert("Step completed successfully!")
     } else {
-      toast.error("Please fill in all required fields correctly")
+      alert("Please fill in all required fields correctly")
     }
   }
 
@@ -331,7 +305,7 @@ export default function MultiStepLoanForm() {
 
   const calculateEMI = () => {
     const P = Number.parseFloat(form.loanAmount)
-    const r = 5.9/ 12 / 100
+    const r = 5.9 / 12 / 100
     const n = Number.parseInt(form.tenure)
     if (isNaN(P) || isNaN(r) || isNaN(n)) return 0
     return Math.round((P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1))
@@ -345,54 +319,8 @@ export default function MultiStepLoanForm() {
     return isNaN(emi) || isNaN(tenure) ? 0 : emi * tenure
   }
 
-  const router = useRouter()
-
   const handleSubmit = async () => {
-    try {
-      const formData = new FormData()
-
-      // Add all form fields to FormData
-      Object.entries(form).forEach(([key, value]) => {
-        if (key === "photo" && value instanceof File) {
-          formData.append(key, value)
-        } else if (typeof value === "string") {
-          formData.append(key, value)
-        }
-      })
-
-      const res = await fetch("/api/submit-loan", {
-        method: "POST",
-        body: formData,
-      })
-
-      // Check if response is ok before trying to parse JSON
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`)
-      }
-
-      const contentType = res.headers.get("content-type")
-      if (contentType && contentType.includes("application/json")) {
-         await res.json()
-        toast.success(
-          "🎉 Thank you. Your Loan application has been submitted. We will review it and connect with you. Visit our website.",
-        )
-        // Wait 2 seconds, then redirect to blank thank-you page
-        setTimeout(() => {
-          router.push("/thank-you")
-        }, 2000)
-      } else {
-        // Handle non-JSON response
-        toast.success(
-          "🎉 Thank you. Your Loan application has been submitted. We will review it and connect with you. Visit our website.",
-        )
-        setTimeout(() => {
-          router.push("/thank-you")
-        }, 2000)
-      }
-    } catch (error) {
-      console.error("Submit error:", error)
-      toast.error("Something went wrong while submitting the form.")
-    }
+    alert("🎉 Thank you. Your Loan application has been submitted. We will review it and connect with you.")
   }
 
   const progress = (step / 6) * 100
@@ -490,13 +418,11 @@ export default function MultiStepLoanForm() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Loan Application</h1>
           <p className="text-gray-600">Complete your loan application in simple steps</p>
         </div>
 
-        {/* Progress Bar */}
         <Card className="mb-8 shadow-lg">
           <CardContent className="pt-6">
             <div className="flex items-center justify-between mb-4">
@@ -513,30 +439,25 @@ export default function MultiStepLoanForm() {
           </CardContent>
         </Card>
 
-        {/* Step Navigation */}
         <div className="flex justify-center mb-8">
           <div className="flex space-x-4 overflow-x-auto pb-2">
             {steps.map((s) => (
               <div key={s.id} className="flex items-center flex-shrink-0">
                 <div
-                  className={`
-                  flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300
-                  ${step >= s.id ? "bg-blue-600 border-blue-600 text-white shadow-lg scale-110" : "bg-white border-gray-300 text-gray-400"}
-                `}
+                  className={`flex items-center justify-center w-10 h-10 rounded-full border-2 transition-all duration-300 ${
+                    step >= s.id ? "bg-blue-600 border-blue-600 text-white shadow-lg scale-110" : "bg-white border-gray-300 text-gray-400"
+                  }`}
                 >
                   <s.icon className="h-5 w-5" />
                 </div>
                 {s.id < 6 && (
-                  <div
-                    className={`w-12 h-0.5 mx-2 transition-colors duration-300 ${step > s.id ? "bg-blue-600" : "bg-gray-300"}`}
-                  />
+                  <div className={`w-12 h-0.5 mx-2 transition-colors duration-300 ${step > s.id ? "bg-blue-600" : "bg-gray-300"}`} />
                 )}
               </div>
             ))}
           </div>
         </div>
 
-        {/* Form Content */}
         <Card className="mb-8 shadow-lg">
           <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
             <CardTitle className="flex items-center space-x-2">
@@ -562,94 +483,52 @@ export default function MultiStepLoanForm() {
                   {renderInput("pan", "PAN Number", "Enter PAN number (e.g., ABCDE1234F)", "text")}
                 </div>
 
-                {/* Photo Upload */}
                 <div className="space-y-2">
-                  <Label className="flex items-center space-x-2">
-                    <Camera className="h-4 w-4" />
+                  <Label htmlFor="photo" className="flex items-center space-x-2">
+                    <User className="h-4 w-4" />
                     <span>
                       Upload Photo <span className="text-red-500">*</span>
                     </span>
                   </Label>
-                  <div
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors relative cursor-pointer"
-                    onDragOver={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                    }}
-                    onDragEnter={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                    }}
-                    onDragLeave={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                    }}
-                    onDrop={(e) => {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      const files = e.dataTransfer.files
-                      if (files && files[0]) {
-                        const file = files[0]
-                        // Validate file type
-                        if (!file.type.startsWith("image/")) {
-                          setErrors({ ...errors, photo: "Please upload a valid image file" })
-                          return
-                        }
-                        // Validate file size (max 5MB)
-                        if (file.size > 5 * 1024 * 1024) {
-                          setErrors({ ...errors, photo: "Image size should be less than 5MB" })
-                          return
-                        }
-                        handleChange("photo", file)
-                        // Create preview
-                        const reader = new FileReader()
-                        reader.onload = (e) => {
-                          setPhotoPreview(e.target?.result as string)
-                        }
-                        reader.readAsDataURL(file)
-                      }
-                    }}
-                    onClick={() => {
-                      const input = document.getElementById("photo-upload") as HTMLInputElement
-                      input?.click()
-                    }}
-                  >
-                    {photoPreview ? (
-                      <div className="relative inline-block">
-                        <Image
-                          src={photoPreview || "/placeholder.svg"}
-                          alt="Preview"
-                          className="w-32 h-32 object-cover rounded-lg mx-auto"
-                        />
-                        <Button
-                          type="button"
-                          variant="destructive"
-                          size="sm"
-                          className="absolute -top-2 -right-2 rounded-full w-6 h-6 p-0"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            removePhoto()
-                          }}
-                        >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <Upload className="h-12 w-12 text-gray-400 mx-auto" />
-                        <div>
-                          <p className="text-gray-600 mb-2">Click to upload or drag and drop</p>
-                          <p className="text-sm text-gray-500">PNG, JPG, JPEG up to 5MB</p>
-                        </div>
-                      </div>
-                    )}
+                  <div className="flex items-center space-x-4">
                     <Input
-                      id="photo-upload"
+                      id="photo"
                       type="file"
                       accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0] || null
+                        handleChange("photo", file)
+                        if (file) {
+                          const reader = new FileReader()
+                          reader.onloadend = () => {
+                            setPhotoPreview(reader.result as string)
+                          }
+                          reader.readAsDataURL(file)
+                        } else {
+                          setPhotoPreview(null)
+                        }
+                      }}
+                      className={errors.photo ? "border-red-500 focus:border-red-500" : ""}
                     />
+                    {photoPreview && (
+                      <div className="relative">
+                        <img
+                          src={photoPreview}
+                          alt="Preview"
+                          className="w-16 h-16 object-cover rounded-lg border-2 border-blue-200"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleChange("photo", null)
+                            setPhotoPreview(null)
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                   {errors.photo && <p className="text-red-500 text-sm">{errors.photo}</p>}
                 </div>
@@ -658,7 +537,6 @@ export default function MultiStepLoanForm() {
 
             {step === 2 && (
               <div className="space-y-6">
-                {/* Permanent Address Section */}
                 <Card className="border-blue-200">
                   <CardHeader>
                     <CardTitle className="text-lg text-blue-900 flex items-center">
@@ -670,53 +548,12 @@ export default function MultiStepLoanForm() {
                     {renderTextarea("permanentAddress", "Street Address", "Enter your permanent address", MapPin)}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {renderInput("permanentDistrict", "District", "Enter district", "text")}
-                      {renderSelect("permanentState", "State", "Select state", [
-                        { value: "Andhra Pradesh", label: "Andhra Pradesh" },
-                        { value: "Arunachal Pradesh", label: "Arunachal Pradesh" },
-                        { value: "Assam", label: "Assam" },
-                        { value: "Bihar", label: "Bihar" },
-                        { value: "Chhattisgarh", label: "Chhattisgarh" },
-                        { value: "Goa", label: "Goa" },
-                        { value: "Gujarat", label: "Gujarat" },
-                        { value: "Haryana", label: "Haryana" },
-                        { value: "Himachal Pradesh", label: "Himachal Pradesh" },
-                        { value: "Jharkhand", label: "Jharkhand" },
-                        { value: "Karnataka", label: "Karnataka" },
-                        { value: "Kerala", label: "Kerala" },
-                        { value: "Madhya Pradesh", label: "Madhya Pradesh" },
-                        { value: "Maharashtra", label: "Maharashtra" },
-                        { value: "Manipur", label: "Manipur" },
-                        { value: "Meghalaya", label: "Meghalaya" },
-                        { value: "Mizoram", label: "Mizoram" },
-                        { value: "Nagaland", label: "Nagaland" },
-                        { value: "Odisha", label: "Odisha" },
-                        { value: "Punjab", label: "Punjab" },
-                        { value: "Rajasthan", label: "Rajasthan" },
-                        { value: "Sikkim", label: "Sikkim" },
-                        { value: "Tamil Nadu", label: "Tamil Nadu" },
-                        { value: "Telangana", label: "Telangana" },
-                        { value: "Tripura", label: "Tripura" },
-                        { value: "Uttar Pradesh", label: "Uttar Pradesh" },
-                        { value: "Uttarakhand", label: "Uttarakhand" },
-                        { value: "West Bengal", label: "West Bengal" },
-                        { value: "Delhi", label: "Delhi" },
-                        { value: "Jammu and Kashmir", label: "Jammu and Kashmir" },
-                        { value: "Ladakh", label: "Ladakh" },
-                        { value: "Puducherry", label: "Puducherry" },
-                        { value: "Chandigarh", label: "Chandigarh" },
-                        {
-                          value: "Dadra and Nagar Haveli and Daman and Diu",
-                          label: "Dadra and Nagar Haveli and Daman and Diu",
-                        },
-                        { value: "Lakshadweep", label: "Lakshadweep" },
-                        { value: "Andaman and Nicobar Islands", label: "Andaman and Nicobar Islands" },
-                      ])}
+                      {renderSelect("permanentState", "State", "Select state", stateOptions)}
                       {renderInput("permanentPincode", "Pincode", "Enter 6-digit pincode", "text")}
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* Current Address Section */}
                 <Card className="border-blue-200">
                   <CardHeader>
                     <CardTitle className="text-lg text-blue-900 flex items-center">
@@ -731,9 +568,7 @@ export default function MultiStepLoanForm() {
                         onChange={(e) => {
                           const isChecked = e.target.checked
                           setSameAsPermament(isChecked)
-
                           if (isChecked) {
-                            // Copy permanent address to current address
                             setForm((prevForm) => ({
                               ...prevForm,
                               currentAddress: prevForm.permanentAddress,
@@ -742,7 +577,6 @@ export default function MultiStepLoanForm() {
                               currentPincode: prevForm.permanentPincode,
                             }))
                           } else {
-                            // Clear current address fields
                             setForm((prevForm) => ({
                               ...prevForm,
                               currentAddress: "",
@@ -761,10 +595,8 @@ export default function MultiStepLoanForm() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="currentAddress" className="flex items-center space-x-2">
-                        <span>
-                          Street Address <span className="text-red-500">*</span>
-                        </span>
+                      <Label htmlFor="currentAddress">
+                        Street Address <span className="text-red-500">*</span>
                       </Label>
                       <Textarea
                         id="currentAddress"
@@ -772,17 +604,15 @@ export default function MultiStepLoanForm() {
                         value={form.currentAddress}
                         onChange={(e) => handleChange("currentAddress", e.target.value)}
                         disabled={sameAsPermament}
-                        className={`${errors.currentAddress ? "border-red-500 focus:border-red-500" : ""} ${sameAsPermament ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                        className={`${errors.currentAddress ? "border-red-500" : ""} ${sameAsPermament ? "bg-gray-100 cursor-not-allowed" : ""}`}
                       />
                       {errors.currentAddress && <p className="text-red-500 text-sm">{errors.currentAddress}</p>}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="currentDistrict" className="flex items-center space-x-2">
-                          <span>
-                            District <span className="text-red-500">*</span>
-                          </span>
+                        <Label htmlFor="currentDistrict">
+                          District <span className="text-red-500">*</span>
                         </Label>
                         <Input
                           id="currentDistrict"
@@ -791,16 +621,14 @@ export default function MultiStepLoanForm() {
                           value={form.currentDistrict}
                           onChange={(e) => handleChange("currentDistrict", e.target.value)}
                           disabled={sameAsPermament}
-                          className={`${errors.currentDistrict ? "border-red-500 focus:border-red-500" : ""} ${sameAsPermament ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                          className={`${errors.currentDistrict ? "border-red-500" : ""} ${sameAsPermament ? "bg-gray-100 cursor-not-allowed" : ""}`}
                         />
                         {errors.currentDistrict && <p className="text-red-500 text-sm">{errors.currentDistrict}</p>}
                       </div>
 
                       <div className="space-y-2">
-                        <Label className="flex items-center space-x-2">
-                          <span>
-                            State <span className="text-red-500">*</span>
-                          </span>
+                        <Label>
+                          State <span className="text-red-500">*</span>
                         </Label>
                         <Select
                           onValueChange={(val) => handleChange("currentState", val)}
@@ -808,52 +636,12 @@ export default function MultiStepLoanForm() {
                           disabled={sameAsPermament}
                         >
                           <SelectTrigger
-                            className={`${errors.currentState ? "border-red-500 focus:border-red-500" : ""} ${sameAsPermament ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                            className={`${errors.currentState ? "border-red-500" : ""} ${sameAsPermament ? "bg-gray-100 cursor-not-allowed" : ""}`}
                           >
                             <SelectValue placeholder="Select state" />
                           </SelectTrigger>
                           <SelectContent>
-                            {[
-                              { value: "Andhra Pradesh", label: "Andhra Pradesh" },
-                              { value: "Arunachal Pradesh", label: "Arunachal Pradesh" },
-                              { value: "Assam", label: "Assam" },
-                              { value: "Bihar", label: "Bihar" },
-                              { value: "Chhattisgarh", label: "Chhattisgarh" },
-                              { value: "Goa", label: "Goa" },
-                              { value: "Gujarat", label: "Gujarat" },
-                              { value: "Haryana", label: "Haryana" },
-                              { value: "Himachal Pradesh", label: "Himachal Pradesh" },
-                              { value: "Jharkhand", label: "Jharkhand" },
-                              { value: "Karnataka", label: "Karnataka" },
-                              { value: "Kerala", label: "Kerala" },
-                              { value: "Madhya Pradesh", label: "Madhya Pradesh" },
-                              { value: "Maharashtra", label: "Maharashtra" },
-                              { value: "Manipur", label: "Manipur" },
-                              { value: "Meghalaya", label: "Meghalaya" },
-                              { value: "Mizoram", label: "Mizoram" },
-                              { value: "Nagaland", label: "Nagaland" },
-                              { value: "Odisha", label: "Odisha" },
-                              { value: "Punjab", label: "Punjab" },
-                              { value: "Rajasthan", label: "Rajasthan" },
-                              { value: "Sikkim", label: "Sikkim" },
-                              { value: "Tamil Nadu", label: "Tamil Nadu" },
-                              { value: "Telangana", label: "Telangana" },
-                              { value: "Tripura", label: "Tripura" },
-                              { value: "Uttar Pradesh", label: "Uttar Pradesh" },
-                              { value: "Uttarakhand", label: "Uttarakhand" },
-                              { value: "West Bengal", label: "West Bengal" },
-                              { value: "Delhi", label: "Delhi" },
-                              { value: "Jammu and Kashmir", label: "Jammu and Kashmir" },
-                              { value: "Ladakh", label: "Ladakh" },
-                              { value: "Puducherry", label: "Puducherry" },
-                              { value: "Chandigarh", label: "Chandigarh" },
-                              {
-                                value: "Dadra and Nagar Haveli and Daman and Diu",
-                                label: "Dadra and Nagar Haveli and Daman and Diu",
-                              },
-                              { value: "Lakshadweep", label: "Lakshadweep" },
-                              { value: "Andaman and Nicobar Islands", label: "Andaman and Nicobar Islands" },
-                            ].map((option) => (
+                            {stateOptions.map((option) => (
                               <SelectItem key={option.value} value={option.value}>
                                 {option.label}
                               </SelectItem>
@@ -864,10 +652,8 @@ export default function MultiStepLoanForm() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="currentPincode" className="flex items-center space-x-2">
-                          <span>
-                            Pincode <span className="text-red-500">*</span>
-                          </span>
+                        <Label htmlFor="currentPincode">
+                          Pincode <span className="text-red-500">*</span>
                         </Label>
                         <Input
                           id="currentPincode"
@@ -876,7 +662,7 @@ export default function MultiStepLoanForm() {
                           value={form.currentPincode}
                           onChange={(e) => handleChange("currentPincode", e.target.value)}
                           disabled={sameAsPermament}
-                          className={`${errors.currentPincode ? "border-red-500 focus:border-red-500" : ""} ${sameAsPermament ? "bg-gray-100 cursor-not-allowed" : ""}`}
+                          className={`${errors.currentPincode ? "border-red-500" : ""} ${sameAsPermament ? "bg-gray-100 cursor-not-allowed" : ""}`}
                         />
                         {errors.currentPincode && <p className="text-red-500 text-sm">{errors.currentPincode}</p>}
                       </div>
@@ -884,7 +670,6 @@ export default function MultiStepLoanForm() {
                   </CardContent>
                 </Card>
 
-                {/* Employment Details */}
                 <Card className="border-blue-200">
                   <CardHeader>
                     <CardTitle className="text-lg text-blue-900 flex items-center">
@@ -917,40 +702,33 @@ export default function MultiStepLoanForm() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {renderInput("loanAmount", "Loan Amount", "Enter loan amount in ₹", "number", IndianRupee)}
                   {renderInput("tenure", "Tenure (months)", "Enter tenure in months", "number")}
-
                   {renderInput("purpose", "Loan Purpose", "Enter loan purpose", "text")}
                 </div>
 
-                {/* EMI Calculator Preview */}
-                {form.loanAmount &&
-                  form.tenure &&
-                  form.interestRate &&
-                  !errors.loanAmount &&
-                  !errors.tenure &&
-                  !errors.interestRate && (
-                    <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-md">
-                      <CardContent className="pt-6">
-                        <div className="flex items-center space-x-2 mb-4">
-                          <Calculator className="h-5 w-5 text-blue-600" />
-                          <h3 className="font-semibold text-blue-900">EMI Calculation</h3>
+                {form.loanAmount && form.tenure && form.interestRate && !errors.loanAmount && !errors.tenure && !errors.interestRate && (
+                  <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-md">
+                    <CardContent className="pt-6">
+                      <div className="flex items-center space-x-2 mb-4">
+                        <Calculator className="h-5 w-5 text-blue-600" />
+                        <h3 className="font-semibold text-blue-900">EMI Calculation</h3>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                        <div className="text-center">
+                          <span className="text-gray-600">Monthly EMI</span>
+                          <p className="font-bold text-blue-900 text-lg">₹{calculateEMI().toLocaleString()}</p>
                         </div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
-                          <div className="text-center">
-                            <span className="text-gray-600">Monthly EMI</span>
-                            <p className="font-bold text-blue-900 text-lg">₹{calculateEMI().toLocaleString()}</p>
-                          </div>
-                          <div className="text-center">
-                            <span className="text-gray-600">Processing Fee</span>
-                            <p className="font-bold text-blue-900 text-lg">₹{processingFee().toLocaleString()}</p>
-                          </div>
-                          <div className="text-center md:col-span-1 col-span-2">
-                            <span className="text-gray-600">Total Payable</span>
-                            <p className="font-bold text-blue-900 text-lg">₹{totalPayable().toLocaleString()}</p>
-                          </div>
+                        <div className="text-center">
+                          <span className="text-gray-600">Processing Fee</span>
+                          <p className="font-bold text-blue-900 text-lg">₹{processingFee().toLocaleString()}</p>
                         </div>
-                      </CardContent>
-                    </Card>
-                  )}
+                        <div className="text-center md:col-span-1 col-span-2">
+                          <span className="text-gray-600">Total Payable</span>
+                          <p className="font-bold text-blue-900 text-lg">₹{totalPayable().toLocaleString()}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
 
@@ -972,7 +750,6 @@ export default function MultiStepLoanForm() {
                   <p className="text-gray-600">Please provide two personal references</p>
                 </div>
 
-                {/* Reference 1 */}
                 <Card className="border-blue-200">
                   <CardHeader>
                     <CardTitle className="text-lg text-blue-900">Reference 1</CardTitle>
@@ -992,7 +769,6 @@ export default function MultiStepLoanForm() {
                   </CardContent>
                 </Card>
 
-                {/* Reference 2 */}
                 <Card className="border-blue-200">
                   <CardHeader>
                     <CardTitle className="text-lg text-blue-900">Reference 2</CardTitle>
@@ -1022,7 +798,6 @@ export default function MultiStepLoanForm() {
                   <p className="text-gray-600">Please review all details before submitting</p>
                 </div>
 
-                {/* Loan Summary */}
                 <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 shadow-md">
                   <CardHeader>
                     <CardTitle className="text-blue-900">Loan Summary</CardTitle>
@@ -1051,7 +826,6 @@ export default function MultiStepLoanForm() {
                   </CardContent>
                 </Card>
 
-                {/* Application Details */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <Card className="shadow-md">
                     <CardHeader>
@@ -1077,8 +851,8 @@ export default function MultiStepLoanForm() {
                       {photoPreview && (
                         <div className="pt-2">
                           <span className="text-gray-600 block mb-2">Photo:</span>
-                          <Image
-                            src={photoPreview || "/placeholder.svg"}
+                          <img
+                            src={photoPreview}
                             alt="Uploaded"
                             className="w-16 h-16 object-cover rounded"
                           />
@@ -1190,7 +964,6 @@ export default function MultiStepLoanForm() {
           </CardContent>
         </Card>
 
-        {/* Navigation */}
         <div className="flex justify-between">
           <Button
             variant="outline"
